@@ -211,7 +211,7 @@ namespace NvlmTests
             try
             {
                 NvGpu.NvmlInitV2();
-                string version = NvGpu.nvmlSystemGetNVMLVersion(10);
+                string version = NvGpu.nvmlSystemGetNVMLVersion(100);
                 if (version.Length == 0 || version == null)
                 {
                     Assert.Fail("Something fail to acquire nvml version.");
