@@ -45,7 +45,7 @@ catch (Exception e)
 - [ ] Device Queries
 - [ ] Unit Queries
 - [ ] Unit Commands
-- [ ] Device Commands
+- [x] Device Commands
 - [ ] Event Handling Methods
 - [ ] Error Reporting
 
