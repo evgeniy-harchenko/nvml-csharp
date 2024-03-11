@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
 using NvmlDeviceArchitecture = System.UInt32;
@@ -10,43 +11,72 @@ namespace Nvidia.Nvml
 {
     internal static class Api
     {
-        const string NVML_SHARED_LIBRARY_STRING = "libnvidia-ml.so";
+        private static class Constants
+        {
+            public const string PlaceHolderLibraryName = "PlaceHolderLibrary";
+            public const string WindowsAssemblyName = "nvml.dll";
+            public const string LinuxAssemblyName = "libnvidia-ml.so";
+        }
+
+        static Api()
+            => NativeLibrary.SetDllImportResolver(Assembly.GetExecutingAssembly(), DllImportResolver);
+
+        private static string GetLibraryName()
+        {
+            switch (Environment.OSVersion.Platform)
+            {
+                case PlatformID.Unix:
+                    return Constants.LinuxAssemblyName;
+                case PlatformID.Win32NT:
+                    return Constants.WindowsAssemblyName;
+                default:
+                    return Constants.LinuxAssemblyName;
+            }
+        }
+
+        private static IntPtr DllImportResolver(string libraryName, Assembly assembly, DllImportSearchPath? searchPath)
+        {
+            var platformDependentName = GetLibraryName();
+
+            NativeLibrary.TryLoad(platformDependentName, assembly, searchPath, out IntPtr handle);
+            return handle;
+        }
 
         #region Initialization And Cleanup
 
-        [DllImport(NVML_SHARED_LIBRARY_STRING, EntryPoint = "nvmlInit")]
+        [DllImport(Constants.PlaceHolderLibraryName, EntryPoint = "nvmlInit")]
         internal static extern NvmlReturn NvmlInit();
 
-        [DllImport(NVML_SHARED_LIBRARY_STRING, EntryPoint = "nvmlInitWithFlags")]
+        [DllImport(Constants.PlaceHolderLibraryName, EntryPoint = "nvmlInitWithFlags")]
         internal static extern NvmlReturn NvmlInitWithFlags(uint flags);
 
-        [DllImport(NVML_SHARED_LIBRARY_STRING, EntryPoint = "nvmlInit_v2")]
+        [DllImport(Constants.PlaceHolderLibraryName, EntryPoint = "nvmlInit_v2")]
         internal static extern NvmlReturn NvmlInitV2();
 
-        [DllImport(NVML_SHARED_LIBRARY_STRING, EntryPoint = "nvmlShutdown")]
+        [DllImport(Constants.PlaceHolderLibraryName, EntryPoint = "nvmlShutdown")]
         internal static extern NvmlReturn NvmlShutdown();
 
         #endregion
 
         #region System Queries
 
-        [DllImport(NVML_SHARED_LIBRARY_STRING, EntryPoint = "nvmlSystemGetCudaDriverVersion")]
+        [DllImport(Constants.PlaceHolderLibraryName, EntryPoint = "nvmlSystemGetCudaDriverVersion")]
         internal static extern NvmlReturn NvmlSystemGetCudaDriverVersion(out int cudaDriverVersion);
 
-        [DllImport(NVML_SHARED_LIBRARY_STRING, EntryPoint = "nvmlSystemGetCudaDriverVersion_v2")]
+        [DllImport(Constants.PlaceHolderLibraryName, EntryPoint = "nvmlSystemGetCudaDriverVersion_v2")]
         internal static extern NvmlReturn NvmlSystemGetCudaDriverVersionV2(out int cudaDriverVersion);
 
-        [DllImport(NVML_SHARED_LIBRARY_STRING, CharSet = CharSet.Ansi, EntryPoint = "nvmlSystemGetDriverVersion")]
+        [DllImport(Constants.PlaceHolderLibraryName, CharSet = CharSet.Ansi, EntryPoint = "nvmlSystemGetDriverVersion")]
         internal static extern NvmlReturn NvmlSystemGetDriverVersion(
             [Out, MarshalAs(UnmanagedType.LPArray)]
             byte[] version, uint length);
 
-        [DllImport(NVML_SHARED_LIBRARY_STRING, CharSet = CharSet.Ansi, EntryPoint = "nvmlSystemGetNVMLVersion")]
+        [DllImport(Constants.PlaceHolderLibraryName, CharSet = CharSet.Ansi, EntryPoint = "nvmlSystemGetNVMLVersion")]
         internal static extern NvmlReturn NvmlSystemGetNVMLVersion(
             [Out, MarshalAs(UnmanagedType.LPArray)]
             byte[] version, uint length);
 
-        [DllImport(NVML_SHARED_LIBRARY_STRING, CharSet = CharSet.Ansi, EntryPoint = "nvmlSystemGetProcessName")]
+        [DllImport(Constants.PlaceHolderLibraryName, CharSet = CharSet.Ansi, EntryPoint = "nvmlSystemGetProcessName")]
         internal static extern NvmlReturn NvmlSystemGetProcessName(uint pid,
             [Out, MarshalAs(UnmanagedType.LPArray)]
             byte[] name, uint length);
@@ -55,233 +85,256 @@ namespace Nvidia.Nvml
 
         #region Device Queries
 
-        [DllImport(NVML_SHARED_LIBRARY_STRING, EntryPoint = "nvmlDeviceGetHandleByIndex")]
+        [DllImport(Constants.PlaceHolderLibraryName, EntryPoint = "nvmlDeviceGetHandleByIndex")]
         internal static extern NvmlReturn NvmlDeviceGetHandleByIndex(uint index, out IntPtr device);
 
-        [DllImport(NVML_SHARED_LIBRARY_STRING, EntryPoint = "nvmlDeviceGetTemperature")]
+        [DllImport(Constants.PlaceHolderLibraryName, EntryPoint = "nvmlDeviceGetTemperature")]
         internal static extern NvmlReturn NvmlDeviceGetTemperature(IntPtr device, NvmlTemperatureSensor sensorType,
             out uint temperature);
 
-        [DllImport(NVML_SHARED_LIBRARY_STRING, CharSet = CharSet.Ansi,
+        [DllImport(Constants.PlaceHolderLibraryName, CharSet = CharSet.Ansi,
             EntryPoint = "nvmlDeviceGetComputeRunningProcesses")]
         internal static extern NvmlReturn NvmlDeviceGetComputeRunningProcesses(IntPtr device, out uint infoCount,
             [Out, MarshalAs(UnmanagedType.LPArray)]
             NvmlProcessInfo[] infos);
 
-        [DllImport(NVML_SHARED_LIBRARY_STRING, CharSet = CharSet.Ansi, EntryPoint = "nvmlDeviceGetAPIRestriction")]
+        [DllImport(Constants.PlaceHolderLibraryName, CharSet = CharSet.Ansi,
+            EntryPoint = "nvmlDeviceGetAPIRestriction")]
         internal static extern NvmlReturn NvmlDeviceGetAPIRestriction(IntPtr device, NvmlRestrictedAPI apiType,
             out NvmlEnableState isRestricted);
 
-        [DllImport(NVML_SHARED_LIBRARY_STRING, CharSet = CharSet.Ansi, EntryPoint = "nvmlDeviceGetApplicationsClock")]
+        [DllImport(Constants.PlaceHolderLibraryName, CharSet = CharSet.Ansi,
+            EntryPoint = "nvmlDeviceGetApplicationsClock")]
         internal static extern NvmlReturn NvmlDeviceGetApplicationsClock(IntPtr device, NvmlClockType clockType,
             out uint clockMhz);
 
-        [DllImport(NVML_SHARED_LIBRARY_STRING, CharSet = CharSet.Ansi, EntryPoint = "nvmlDeviceGetArchitecture")]
+        [DllImport(Constants.PlaceHolderLibraryName, CharSet = CharSet.Ansi, EntryPoint = "nvmlDeviceGetArchitecture")]
         internal static extern NvmlReturn NvmlDeviceGetArchitecture(IntPtr device, out NvmlDeviceArchitecture arch);
 
-        [DllImport(NVML_SHARED_LIBRARY_STRING, CharSet = CharSet.Ansi, EntryPoint = "nvmlDeviceAttributes")]
+        [DllImport(Constants.PlaceHolderLibraryName, CharSet = CharSet.Ansi, EntryPoint = "nvmlDeviceAttributes")]
         internal static extern NvmlReturn NvmlDeviceGetAttributes(IntPtr device, out NvmlDeviceAttributes attributes);
 
-        [DllImport(NVML_SHARED_LIBRARY_STRING, CharSet = CharSet.Ansi,
+        [DllImport(Constants.PlaceHolderLibraryName, CharSet = CharSet.Ansi,
             EntryPoint = "nvmlDeviceGetAutoBoostedClocksEnabled")]
         internal static extern NvmlReturn NvmlDeviceGetAutoBoostedClocksEnabled(IntPtr device,
             out NvmlEnableState isEnabled, out NvmlEnableState defaultIsEnabled);
 
-        [DllImport(NVML_SHARED_LIBRARY_STRING, CharSet = CharSet.Ansi, EntryPoint = "nvmlDeviceGetBAR1MemoryInfo")]
+        [DllImport(Constants.PlaceHolderLibraryName, CharSet = CharSet.Ansi,
+            EntryPoint = "nvmlDeviceGetBAR1MemoryInfo")]
         internal static extern NvmlReturn NvmlDeviceGetBAR1MemoryInfo(IntPtr device, NvmlBAR1Memory bar1Memory);
 
-        [DllImport(NVML_SHARED_LIBRARY_STRING, CharSet = CharSet.Ansi, EntryPoint = "nvmlDeviceGetBoardId")]
+        [DllImport(Constants.PlaceHolderLibraryName, CharSet = CharSet.Ansi, EntryPoint = "nvmlDeviceGetBoardId")]
         internal static extern NvmlReturn NvmlDeviceGetBoardId(IntPtr device, out uint boardId);
 
-        [DllImport(NVML_SHARED_LIBRARY_STRING, CharSet = CharSet.Ansi, EntryPoint = "nvmlDeviceGetBoardPartNumber")]
+        [DllImport(Constants.PlaceHolderLibraryName, CharSet = CharSet.Ansi,
+            EntryPoint = "nvmlDeviceGetBoardPartNumber")]
         internal static extern NvmlReturn NvmlDeviceGetBoardPartNumber(IntPtr device,
             [Out, MarshalAs(UnmanagedType.LPArray)]
             byte[] partNumber, uint length);
 
-        [DllImport(NVML_SHARED_LIBRARY_STRING, CharSet = CharSet.Ansi, EntryPoint = "nvmlDeviceGetBrand")]
+        [DllImport(Constants.PlaceHolderLibraryName, CharSet = CharSet.Ansi, EntryPoint = "nvmlDeviceGetBrand")]
         internal static extern NvmlReturn NvmlDeviceGetBrand(IntPtr device, out NvmlBrandType type);
 
-        [DllImport(NVML_SHARED_LIBRARY_STRING, CharSet = CharSet.Ansi, EntryPoint = "nvmlDeviceGetBridgeChipInfo")]
+        [DllImport(Constants.PlaceHolderLibraryName, CharSet = CharSet.Ansi,
+            EntryPoint = "nvmlDeviceGetBridgeChipInfo")]
         internal static extern NvmlReturn NvmlDeviceGetBridgeChipInfo(IntPtr device,
             NvmlBridgeChipHierarchy bridgeHierarchy);
 
-        [DllImport(NVML_SHARED_LIBRARY_STRING, CharSet = CharSet.Ansi, EntryPoint = "nvmlDeviceGetClock")]
+        [DllImport(Constants.PlaceHolderLibraryName, CharSet = CharSet.Ansi, EntryPoint = "nvmlDeviceGetClock")]
         internal static extern NvmlReturn NvmlDeviceGetClock(IntPtr device, NvmlClockType clockType,
             NvmlClockId clockId, out uint clockMHz);
 
-        [DllImport(NVML_SHARED_LIBRARY_STRING, CharSet = CharSet.Ansi, EntryPoint = "nvmlDeviceGetClockInfo")]
+        [DllImport(Constants.PlaceHolderLibraryName, CharSet = CharSet.Ansi, EntryPoint = "nvmlDeviceGetClockInfo")]
         internal static extern NvmlReturn NvmlDeviceGetClockInfo(IntPtr device, NvmlClockType type, out uint clock);
 
-        [DllImport(NVML_SHARED_LIBRARY_STRING, CharSet = CharSet.Ansi, EntryPoint = "nvmlDeviceGetComputeMode")]
+        [DllImport(Constants.PlaceHolderLibraryName, CharSet = CharSet.Ansi, EntryPoint = "nvmlDeviceGetComputeMode")]
         internal static extern NvmlReturn NvmlDeviceGetComputeMode(IntPtr device, out NvmlComputeMode mode);
 
-        [DllImport(NVML_SHARED_LIBRARY_STRING, CharSet = CharSet.Ansi,
+        [DllImport(Constants.PlaceHolderLibraryName, CharSet = CharSet.Ansi,
             EntryPoint = "nvmlDeviceGetComputeRunningProcesses")]
         internal static extern NvmlReturn NvmlDeviceGetComputeRunningProcesses(IntPtr device, out uint infoCount,
             out NvmlProcessInfo infos);
 
-        [DllImport(NVML_SHARED_LIBRARY_STRING, CharSet = CharSet.Ansi, EntryPoint = "nvmlDeviceGetCount_v2")]
+        [DllImport(Constants.PlaceHolderLibraryName, CharSet = CharSet.Ansi, EntryPoint = "nvmlDeviceGetCount_v2")]
         internal static extern NvmlReturn NvmlDeviceGetCount_v2(out uint deviceCount);
 
-        [DllImport(NVML_SHARED_LIBRARY_STRING, CharSet = CharSet.Ansi,
+        [DllImport(Constants.PlaceHolderLibraryName, CharSet = CharSet.Ansi,
             EntryPoint = "nvmlDeviceGetCudaComputeCapability")]
         internal static extern NvmlReturn NvmlDeviceGetCudaComputeCapability(IntPtr device, out int major,
             out int minor);
 
-        [DllImport(NVML_SHARED_LIBRARY_STRING, CharSet = CharSet.Ansi,
+        [DllImport(Constants.PlaceHolderLibraryName, CharSet = CharSet.Ansi,
             EntryPoint = "nvmlDeviceGetCurrPcieLinkGeneration")]
         internal static extern NvmlReturn NvmlDeviceGetCurrPcieLinkGeneration(IntPtr device, out uint currLinkGen);
 
-        [DllImport(NVML_SHARED_LIBRARY_STRING, CharSet = CharSet.Ansi, EntryPoint = "nvmlDeviceGetCurrPcieLinkWidth")]
+        [DllImport(Constants.PlaceHolderLibraryName, CharSet = CharSet.Ansi,
+            EntryPoint = "nvmlDeviceGetCurrPcieLinkWidth")]
         internal static extern NvmlReturn NvmlDeviceGetCurrPcieLinkWidth(IntPtr device, out uint currLinkWidth);
 
-        [DllImport(NVML_SHARED_LIBRARY_STRING, CharSet = CharSet.Ansi,
+        [DllImport(Constants.PlaceHolderLibraryName, CharSet = CharSet.Ansi,
             EntryPoint = "nvmlDeviceGetCurrentClocksThrottleReasons")]
         internal static extern NvmlReturn NvmlDeviceGetCurrentClocksThrottleReasons(IntPtr device,
             out ulong clocksThrottleReasons);
 
-        [DllImport(NVML_SHARED_LIBRARY_STRING, CharSet = CharSet.Ansi, EntryPoint = "nvmlDeviceGetDecoderUtilization")]
+        [DllImport(Constants.PlaceHolderLibraryName, CharSet = CharSet.Ansi,
+            EntryPoint = "nvmlDeviceGetDecoderUtilization")]
         internal static extern NvmlReturn NvmlDeviceGetDecoderUtilization(IntPtr device, uint utilization,
             out uint samplingPeriodUs);
 
-        [DllImport(NVML_SHARED_LIBRARY_STRING, CharSet = CharSet.Ansi,
+        [DllImport(Constants.PlaceHolderLibraryName, CharSet = CharSet.Ansi,
             EntryPoint = "nvmlDeviceGetDefaultApplicationsClock")]
         internal static extern NvmlReturn NvmlDeviceGetDefaultApplicationsClock(IntPtr device, NvmlClockType clockType,
             out uint clockMHz);
 
-        [DllImport(NVML_SHARED_LIBRARY_STRING, CharSet = CharSet.Ansi, EntryPoint = "nvmlDeviceGetDetailedEccErrors")]
+        [DllImport(Constants.PlaceHolderLibraryName, CharSet = CharSet.Ansi,
+            EntryPoint = "nvmlDeviceGetDetailedEccErrors")]
         internal static extern NvmlReturn NvmlDeviceGetDetailedEccErrors(IntPtr device, NvmlMemoryErrorType errorType,
             NvmlEccCounterType counterType, out NvmlEccErrorCounts eccCounts);
 
-        [DllImport(NVML_SHARED_LIBRARY_STRING, CharSet = CharSet.Ansi, EntryPoint = "nvmlDeviceGetDisplayActive")]
+        [DllImport(Constants.PlaceHolderLibraryName, CharSet = CharSet.Ansi, EntryPoint = "nvmlDeviceGetDisplayActive")]
         internal static extern NvmlReturn NvmlDeviceGetDisplayActive(IntPtr device, out NvmlEnableState isActive);
 
-        [DllImport(NVML_SHARED_LIBRARY_STRING, CharSet = CharSet.Ansi, EntryPoint = "nvmlDeviceGetDisplayMode")]
+        [DllImport(Constants.PlaceHolderLibraryName, CharSet = CharSet.Ansi, EntryPoint = "nvmlDeviceGetDisplayMode")]
         internal static extern NvmlReturn NvmlDeviceGetDisplayMode(IntPtr device, out NvmlEnableState display);
 
-        [DllImport(NVML_SHARED_LIBRARY_STRING, CharSet = CharSet.Ansi, EntryPoint = "nvmlDeviceGetDriverModel")]
+        [DllImport(Constants.PlaceHolderLibraryName, CharSet = CharSet.Ansi, EntryPoint = "nvmlDeviceGetDriverModel")]
         internal static extern NvmlReturn NvmlDeviceGetDriverModel(IntPtr device, out NvmlDriverModel current,
             out NvmlDriverModel pending);
 
-        [DllImport(NVML_SHARED_LIBRARY_STRING, CharSet = CharSet.Ansi, EntryPoint = "nvmlDeviceGetEccMode")]
+        [DllImport(Constants.PlaceHolderLibraryName, CharSet = CharSet.Ansi, EntryPoint = "nvmlDeviceGetEccMode")]
         internal static extern NvmlReturn NvmlDeviceGetEccMode(IntPtr device, out NvmlEnableState current,
             out NvmlEnableState pending);
 
-        [DllImport(NVML_SHARED_LIBRARY_STRING, CharSet = CharSet.Ansi, EntryPoint = "nvmlDeviceGetEncoderCapacity")]
+        [DllImport(Constants.PlaceHolderLibraryName, CharSet = CharSet.Ansi,
+            EntryPoint = "nvmlDeviceGetEncoderCapacity")]
         internal static extern NvmlReturn NvmlDeviceGetEncoderCapacity(IntPtr device, NvmlEncoderType encoderQueryType,
             out uint encoderCapacity);
 
-        [DllImport(NVML_SHARED_LIBRARY_STRING, CharSet = CharSet.Ansi, EntryPoint = "nvmlDeviceGetEncoderSessions")]
+        [DllImport(Constants.PlaceHolderLibraryName, CharSet = CharSet.Ansi,
+            EntryPoint = "nvmlDeviceGetEncoderSessions")]
         internal static extern NvmlReturn NvmlDeviceGetEncoderSessions(IntPtr device, out uint sessionCount,
             out NvmlEncoderSessionInfo sessionInfos);
 
-        [DllImport(NVML_SHARED_LIBRARY_STRING, CharSet = CharSet.Ansi, EntryPoint = "nvmlDeviceGetEncoderStats")]
+        [DllImport(Constants.PlaceHolderLibraryName, CharSet = CharSet.Ansi, EntryPoint = "nvmlDeviceGetEncoderStats")]
         internal static extern NvmlReturn NvmlDeviceGetEncoderStats(IntPtr device, out uint sessionCount,
             out uint averageFps, out uint averageLatency);
 
-        [DllImport(NVML_SHARED_LIBRARY_STRING, CharSet = CharSet.Ansi, EntryPoint = "nvmlDeviceGetEncoderUtilization")]
+        [DllImport(Constants.PlaceHolderLibraryName, CharSet = CharSet.Ansi,
+            EntryPoint = "nvmlDeviceGetEncoderUtilization")]
         internal static extern NvmlReturn NvmlDeviceGetEncoderUtilization(IntPtr device, out uint utilization,
             out uint samplingPeriodUs);
 
-        [DllImport(NVML_SHARED_LIBRARY_STRING, CharSet = CharSet.Ansi, EntryPoint = "nvmlDeviceGetEnforcedPowerLimit")]
+        [DllImport(Constants.PlaceHolderLibraryName, CharSet = CharSet.Ansi,
+            EntryPoint = "nvmlDeviceGetEnforcedPowerLimit")]
         internal static extern NvmlReturn NvmlDeviceGetEnforcedPowerLimit(IntPtr device, out uint limit);
 
-        [DllImport(NVML_SHARED_LIBRARY_STRING, CharSet = CharSet.Ansi, EntryPoint = "nvmlDeviceGetFBCSessions")]
+        [DllImport(Constants.PlaceHolderLibraryName, CharSet = CharSet.Ansi, EntryPoint = "nvmlDeviceGetFBCSessions")]
         internal static extern NvmlReturn NvmlDeviceGetFBCSessions(IntPtr device, out uint sessionCount,
             out NvmlFBCSessionInfo sessionInfo);
 
-        [DllImport(NVML_SHARED_LIBRARY_STRING, CharSet = CharSet.Ansi, EntryPoint = "nvmlDeviceGetFanControlPolicy_v2")]
+        [DllImport(Constants.PlaceHolderLibraryName, CharSet = CharSet.Ansi,
+            EntryPoint = "nvmlDeviceGetFanControlPolicy_v2")]
         internal static extern NvmlReturn NvmlDeviceGetFanControlPolicy_v2(IntPtr device, uint fan,
             out NvmlFanControlPolicy policy);
 
-        [DllImport(NVML_SHARED_LIBRARY_STRING, CharSet = CharSet.Ansi, EntryPoint = "nvmlDeviceGetFanSpeed")]
+        [DllImport(Constants.PlaceHolderLibraryName, CharSet = CharSet.Ansi, EntryPoint = "nvmlDeviceGetFanSpeed")]
         internal static extern NvmlReturn NvmlDeviceGetFanSpeed(IntPtr device, out uint speed);
 
-        [DllImport(NVML_SHARED_LIBRARY_STRING, CharSet = CharSet.Ansi, EntryPoint = "nvmlDeviceGetFanSpeed_v2")]
+        [DllImport(Constants.PlaceHolderLibraryName, CharSet = CharSet.Ansi, EntryPoint = "nvmlDeviceGetFanSpeed_v2")]
         internal static extern NvmlReturn NvmlDeviceGetFanSpeed_v2(IntPtr device, uint fan, out uint speed);
 
-        [DllImport(NVML_SHARED_LIBRARY_STRING, CharSet = CharSet.Ansi,
+        [DllImport(Constants.PlaceHolderLibraryName, CharSet = CharSet.Ansi,
             EntryPoint = "nvmlDeviceGetGpcClkMinMaxVfOffset")]
         internal static extern NvmlReturn NvmlDeviceGetGpcClkMinMaxVfOffset(IntPtr device, out int minOffset,
             out int maxOffset);
 
-        [DllImport(NVML_SHARED_LIBRARY_STRING, CharSet = CharSet.Ansi, EntryPoint = "nvmlDeviceGetGpcClkVfOffset")]
+        [DllImport(Constants.PlaceHolderLibraryName, CharSet = CharSet.Ansi,
+            EntryPoint = "nvmlDeviceGetGpcClkVfOffset")]
         internal static extern NvmlReturn NvmlDeviceGetGpcClkVfOffset(IntPtr device, out int offset);
 
-        [DllImport(NVML_SHARED_LIBRARY_STRING, CharSet = CharSet.Ansi,
+        [DllImport(Constants.PlaceHolderLibraryName, CharSet = CharSet.Ansi,
             EntryPoint = "nvmlDeviceGetGpuMaxPcieLinkGeneration")]
         internal static extern NvmlReturn NvmlDeviceGetGpuMaxPcieLinkGeneration(IntPtr device,
             out uint maxLinkGenDevice);
 
-        [DllImport(NVML_SHARED_LIBRARY_STRING, CharSet = CharSet.Ansi, EntryPoint = "nvmlDeviceGetGpuOperationMode")]
+        [DllImport(Constants.PlaceHolderLibraryName, CharSet = CharSet.Ansi,
+            EntryPoint = "nvmlDeviceGetGpuOperationMode")]
         internal static extern NvmlReturn NvmlDeviceGetGpuOperationMode(IntPtr device, out NvmlGpuOperationMode current,
             out NvmlGpuOperationMode pending);
 
-        [DllImport(NVML_SHARED_LIBRARY_STRING, CharSet = CharSet.Ansi,
+        [DllImport(Constants.PlaceHolderLibraryName, CharSet = CharSet.Ansi,
             EntryPoint = "nvmlDeviceGetGraphicsRunningProcesses")]
         internal static extern NvmlReturn NvmlDeviceGetGraphicsRunningProcesses(IntPtr device, out uint infoCount,
             [Out, MarshalAs(UnmanagedType.LPArray)]
             NvmlProcessInfo[] infos);
 
-        [DllImport(NVML_SHARED_LIBRARY_STRING, CharSet = CharSet.Ansi, EntryPoint = "nvmlDeviceGetHandleByIndex_v2")]
+        [DllImport(Constants.PlaceHolderLibraryName, CharSet = CharSet.Ansi,
+            EntryPoint = "nvmlDeviceGetHandleByIndex_v2")]
         internal static extern NvmlReturn NvmlDeviceGetHandleByIndex_v2(uint index, out IntPtr device);
 
-        [DllImport(NVML_SHARED_LIBRARY_STRING, CharSet = CharSet.Ansi, EntryPoint = "nvmlDeviceGetHandleByPciBusId_v2")]
+        [DllImport(Constants.PlaceHolderLibraryName, CharSet = CharSet.Ansi,
+            EntryPoint = "nvmlDeviceGetHandleByPciBusId_v2")]
         internal static extern NvmlReturn NvmlDeviceGetHandleByPciBusId_v2(string pciBusId, out IntPtr device);
 
-        [DllImport(NVML_SHARED_LIBRARY_STRING, CharSet = CharSet.Ansi, EntryPoint = "nvmlDeviceGetHandleBySerial")]
+        [DllImport(Constants.PlaceHolderLibraryName, CharSet = CharSet.Ansi,
+            EntryPoint = "nvmlDeviceGetHandleBySerial")]
         internal static extern NvmlReturn NvmlDeviceGetHandleBySerial(string serial, IntPtr device);
 
-        [DllImport(NVML_SHARED_LIBRARY_STRING, CharSet = CharSet.Ansi, EntryPoint = "nvmlDeviceGetHandleByUUID")]
+        [DllImport(Constants.PlaceHolderLibraryName, CharSet = CharSet.Ansi, EntryPoint = "nvmlDeviceGetHandleByUUID")]
         internal static extern NvmlReturn NvmlDeviceGetHandleByUUID(string uuid, out IntPtr device);
 
-        [DllImport(NVML_SHARED_LIBRARY_STRING, CharSet = CharSet.Ansi, EntryPoint = "nvmlDeviceGetIndex")]
+        [DllImport(Constants.PlaceHolderLibraryName, CharSet = CharSet.Ansi, EntryPoint = "nvmlDeviceGetIndex")]
         internal static extern NvmlReturn NvmlDeviceGetIndex(IntPtr device, out uint index);
 
-        [DllImport(NVML_SHARED_LIBRARY_STRING, CharSet = CharSet.Ansi,
+        [DllImport(Constants.PlaceHolderLibraryName, CharSet = CharSet.Ansi,
             EntryPoint = "nvmlDeviceGetInforomConfigurationChecksum")]
         internal static extern NvmlReturn NvmlDeviceGetInforomConfigurationChecksum(IntPtr device, out uint checksum);
 
-        [DllImport(NVML_SHARED_LIBRARY_STRING, CharSet = CharSet.Ansi, EntryPoint = "nvmlDeviceGetInforomImageVersion")]
+        [DllImport(Constants.PlaceHolderLibraryName, CharSet = CharSet.Ansi,
+            EntryPoint = "nvmlDeviceGetInforomImageVersion")]
         internal static extern NvmlReturn NvmlDeviceGetInforomImageVersion(IntPtr device, out string version,
             uint length);
 
-        [DllImport(NVML_SHARED_LIBRARY_STRING, CharSet = CharSet.Ansi, EntryPoint = "nvmlDeviceGetMemClkVfOffset")]
+        [DllImport(Constants.PlaceHolderLibraryName, CharSet = CharSet.Ansi,
+            EntryPoint = "nvmlDeviceGetMemClkVfOffset")]
         internal static extern NvmlReturn NvmlDeviceGetMemClkVfOffset(IntPtr device, out int offset);
 
-        [DllImport(NVML_SHARED_LIBRARY_STRING, CharSet = CharSet.Ansi, EntryPoint = "nvmlDeviceGetName")]
+        [DllImport(Constants.PlaceHolderLibraryName, CharSet = CharSet.Ansi, EntryPoint = "nvmlDeviceGetName")]
         internal static extern NvmlReturn NvmlDeviceGetName(IntPtr device,
             [Out, MarshalAs(UnmanagedType.LPArray)]
             byte[] name, uint length);
 
-        [DllImport(NVML_SHARED_LIBRARY_STRING, CharSet = CharSet.Ansi, EntryPoint = "nvmlDeviceGetPciInfo_v3")]
+        [DllImport(Constants.PlaceHolderLibraryName, CharSet = CharSet.Ansi, EntryPoint = "nvmlDeviceGetPciInfo_v3")]
         internal static extern NvmlReturn NvmlDeviceGetPciInfo_v3(IntPtr device, out NvmlPciInfo pci);
 
-        [DllImport(NVML_SHARED_LIBRARY_STRING, CharSet = CharSet.Ansi, EntryPoint = "nvmlDeviceGetPersistenceMode")]
+        [DllImport(Constants.PlaceHolderLibraryName, CharSet = CharSet.Ansi,
+            EntryPoint = "nvmlDeviceGetPersistenceMode")]
         internal static extern NvmlReturn NvmlDeviceGetPersistenceMode(IntPtr device, out NvmlEnableState mode);
 
-        [DllImport(NVML_SHARED_LIBRARY_STRING, CharSet = CharSet.Ansi,
+        [DllImport(Constants.PlaceHolderLibraryName, CharSet = CharSet.Ansi,
             EntryPoint = "nvmlDeviceGetPowerManagementDefaultLimit")]
         internal static extern NvmlReturn
             NvmlDeviceGetPowerManagementDefaultLimit(IntPtr device, out uint defaultLimit);
 
-        [DllImport(NVML_SHARED_LIBRARY_STRING, CharSet = CharSet.Ansi,
+        [DllImport(Constants.PlaceHolderLibraryName, CharSet = CharSet.Ansi,
             EntryPoint = "nvmlDeviceGetPowerManagementLimit")]
         internal static extern NvmlReturn NvmlDeviceGetPowerManagementLimit(IntPtr device, out uint limit);
 
-        [DllImport(NVML_SHARED_LIBRARY_STRING, CharSet = CharSet.Ansi,
+        [DllImport(Constants.PlaceHolderLibraryName, CharSet = CharSet.Ansi,
             EntryPoint = "nvmlDeviceGetPowerManagementLimitConstraints")]
         internal static extern NvmlReturn NvmlDeviceGetPowerManagementLimitConstraints(IntPtr device, out uint minLimit,
             out uint maxLimit);
 
-        [DllImport(NVML_SHARED_LIBRARY_STRING, CharSet = CharSet.Ansi, EntryPoint = "nvmlDeviceSetDefaultFanSpeed_v2")]
+        [DllImport(Constants.PlaceHolderLibraryName, CharSet = CharSet.Ansi,
+            EntryPoint = "nvmlDeviceSetDefaultFanSpeed_v2")]
         internal static extern NvmlReturn NvmlDeviceSetDefaultFanSpeed_v2(IntPtr device, uint fan);
 
-        [DllImport(NVML_SHARED_LIBRARY_STRING, CharSet = CharSet.Ansi, EntryPoint = "nvmlDeviceSetFanControlPolicy")]
+        [DllImport(Constants.PlaceHolderLibraryName, CharSet = CharSet.Ansi,
+            EntryPoint = "nvmlDeviceSetFanControlPolicy")]
         internal static extern NvmlReturn NvmlDeviceSetFanControlPolicy(IntPtr device, uint fan,
             out NvmlFanControlPolicy policy);
 
-        [DllImport(NVML_SHARED_LIBRARY_STRING, CharSet = CharSet.Ansi,
+        [DllImport(Constants.PlaceHolderLibraryName, CharSet = CharSet.Ansi,
             EntryPoint = "nvmlSystemGetConfComputeGpusReadyState")]
         internal static extern NvmlReturn NvmlSystemGetConfComputeGpusReadyState(out uint isAcceptingWork);
 
@@ -289,80 +342,87 @@ namespace Nvidia.Nvml
 
         #region Device Commands
 
-        [DllImport(NVML_SHARED_LIBRARY_STRING, CharSet = CharSet.Ansi, EntryPoint = "nvmlDeviceClearEccErrorCounts")]
+        [DllImport(Constants.PlaceHolderLibraryName, CharSet = CharSet.Ansi,
+            EntryPoint = "nvmlDeviceClearEccErrorCounts")]
         internal static extern NvmlReturn NvmlDeviceClearEccErrorCounts(IntPtr device, NvmlEccCounterType counterType);
 
-        [DllImport(NVML_SHARED_LIBRARY_STRING, CharSet = CharSet.Ansi, EntryPoint = "nvmlDeviceGetClkMonStatus")]
+        [DllImport(Constants.PlaceHolderLibraryName, CharSet = CharSet.Ansi, EntryPoint = "nvmlDeviceGetClkMonStatus")]
         internal static extern NvmlReturn NvmlDeviceGetClkMonStatus(IntPtr device, out IntPtr status);
 
-        [DllImport(NVML_SHARED_LIBRARY_STRING, CharSet = CharSet.Ansi, EntryPoint = "nvmlDeviceResetGpuLockedClocks")]
+        [DllImport(Constants.PlaceHolderLibraryName, CharSet = CharSet.Ansi,
+            EntryPoint = "nvmlDeviceResetGpuLockedClocks")]
         internal static extern NvmlReturn NvmlDeviceResetGpuLockedClocks(IntPtr device);
 
-        [DllImport(NVML_SHARED_LIBRARY_STRING, CharSet = CharSet.Ansi,
+        [DllImport(Constants.PlaceHolderLibraryName, CharSet = CharSet.Ansi,
             EntryPoint = "nvmlDeviceResetMemoryLockedClocks")]
         internal static extern NvmlReturn NvmlDeviceResetMemoryLockedClocks(IntPtr device);
 
-        [DllImport(NVML_SHARED_LIBRARY_STRING, CharSet = CharSet.Ansi, EntryPoint = "nvmlDeviceSetAPIRestriction")]
+        [DllImport(Constants.PlaceHolderLibraryName, CharSet = CharSet.Ansi,
+            EntryPoint = "nvmlDeviceSetAPIRestriction")]
         internal static extern NvmlReturn NvmlDeviceSetAPIRestriction(IntPtr device, NvmlRestrictedAPI apiType,
             NvmlEnableState isRestricted);
 
-        [DllImport(NVML_SHARED_LIBRARY_STRING, CharSet = CharSet.Ansi, EntryPoint = "nvmlDeviceSetApplicationsClocks")]
+        [DllImport(Constants.PlaceHolderLibraryName, CharSet = CharSet.Ansi,
+            EntryPoint = "nvmlDeviceSetApplicationsClocks")]
         internal static extern NvmlReturn NvmlDeviceSetApplicationsClocks(IntPtr device, uint memClockMHz,
             uint graphicsClockMHz);
 
-        [DllImport(NVML_SHARED_LIBRARY_STRING, CharSet = CharSet.Ansi, EntryPoint = "nvmlDeviceSetComputeMode")]
+        [DllImport(Constants.PlaceHolderLibraryName, CharSet = CharSet.Ansi, EntryPoint = "nvmlDeviceSetComputeMode")]
         internal static extern NvmlReturn NvmlDeviceSetComputeMode(IntPtr device, NvmlComputeMode mode);
 
-        [DllImport(NVML_SHARED_LIBRARY_STRING, CharSet = CharSet.Ansi,
+        [DllImport(Constants.PlaceHolderLibraryName, CharSet = CharSet.Ansi,
             EntryPoint = "nvmlDeviceSetConfComputeUnprotectedMemSize")]
         internal static extern NvmlReturn NvmlDeviceSetConfComputeUnprotectedMemSize(IntPtr device, ulong sizeKiB);
 
-        [DllImport(NVML_SHARED_LIBRARY_STRING, CharSet = CharSet.Ansi, EntryPoint = "nvmlDeviceSetDriverModel")]
+        [DllImport(Constants.PlaceHolderLibraryName, CharSet = CharSet.Ansi, EntryPoint = "nvmlDeviceSetDriverModel")]
         internal static extern NvmlReturn NvmlDeviceSetDriverModel(IntPtr device, NvmlDriverModel driverModel,
             uint flags);
 
-        [DllImport(NVML_SHARED_LIBRARY_STRING, CharSet = CharSet.Ansi, EntryPoint = "nvmlDeviceSetEccMode")]
+        [DllImport(Constants.PlaceHolderLibraryName, CharSet = CharSet.Ansi, EntryPoint = "nvmlDeviceSetEccMode")]
         internal static extern NvmlReturn NvmlDeviceSetEccMode(IntPtr device, NvmlEnableState ecc);
 
-        [DllImport(NVML_SHARED_LIBRARY_STRING, CharSet = CharSet.Ansi, EntryPoint = "nvmlDeviceSetFanSpeed_v2")]
+        [DllImport(Constants.PlaceHolderLibraryName, CharSet = CharSet.Ansi, EntryPoint = "nvmlDeviceSetFanSpeed_v2")]
         internal static extern NvmlReturn NvmlDeviceSetFanSpeed_v2(IntPtr device, uint fan, uint speed);
 
-        [DllImport(NVML_SHARED_LIBRARY_STRING, CharSet = CharSet.Ansi, EntryPoint = "nvmlDeviceSetGpcClkVfOffset")]
+        [DllImport(Constants.PlaceHolderLibraryName, CharSet = CharSet.Ansi,
+            EntryPoint = "nvmlDeviceSetGpcClkVfOffset")]
         internal static extern NvmlReturn NvmlDeviceSetGpcClkVfOffset(IntPtr device, int offset);
 
-        [DllImport(NVML_SHARED_LIBRARY_STRING, CharSet = CharSet.Ansi, EntryPoint = "nvmlDeviceSetGpuLockedClocks")]
+        [DllImport(Constants.PlaceHolderLibraryName, CharSet = CharSet.Ansi,
+            EntryPoint = "nvmlDeviceSetGpuLockedClocks")]
         internal static extern NvmlReturn NvmlDeviceSetGpuLockedClocks(IntPtr device, uint minGpuClockMHz,
             uint maxGpuClockMHz);
 
-        [DllImport(NVML_SHARED_LIBRARY_STRING, CharSet = CharSet.Ansi, EntryPoint = "nvmlDeviceSetGpuOperationMode")]
+        [DllImport(Constants.PlaceHolderLibraryName, CharSet = CharSet.Ansi,
+            EntryPoint = "nvmlDeviceSetGpuOperationMode")]
         internal static extern NvmlReturn NvmlDeviceSetGpuOperationMode(IntPtr device, NvmlGpuOperationMode mode);
 
-        [DllImport(NVML_SHARED_LIBRARY_STRING, CharSet = CharSet.Ansi, EntryPoint = "nvmlDeviceSetMemClkVfOffset")]
+        [DllImport(Constants.PlaceHolderLibraryName, CharSet = CharSet.Ansi,
+            EntryPoint = "nvmlDeviceSetMemClkVfOffset")]
         internal static extern NvmlReturn NvmlDeviceSetMemClkVfOffset(IntPtr device, int offset);
 
-        [DllImport(NVML_SHARED_LIBRARY_STRING, CharSet = CharSet.Ansi, EntryPoint = "nvmlDeviceSetMemoryLockedClocks")]
+        [DllImport(Constants.PlaceHolderLibraryName, CharSet = CharSet.Ansi,
+            EntryPoint = "nvmlDeviceSetMemoryLockedClocks")]
         internal static extern NvmlReturn NvmlDeviceSetMemoryLockedClocks(IntPtr device, uint minMemClockMHz,
             uint maxMemClockMHz);
 
-        [DllImport(NVML_SHARED_LIBRARY_STRING, CharSet = CharSet.Ansi, EntryPoint = "nvmlDeviceSetPersistenceMode")]
+        [DllImport(Constants.PlaceHolderLibraryName, CharSet = CharSet.Ansi,
+            EntryPoint = "nvmlDeviceSetPersistenceMode")]
         internal static extern NvmlReturn NvmlDeviceSetPersistenceMode(IntPtr device, NvmlEnableState mode);
 
-        [DllImport(NVML_SHARED_LIBRARY_STRING, CharSet = CharSet.Ansi,
+        [DllImport(Constants.PlaceHolderLibraryName, CharSet = CharSet.Ansi,
             EntryPoint = "nvmlDeviceSetPowerManagementLimit")]
         internal static extern NvmlReturn NvmlDeviceSetPowerManagementLimit(IntPtr device, uint limit);
 
-        [DllImport(NVML_SHARED_LIBRARY_STRING, CharSet = CharSet.Ansi,
+        [DllImport(Constants.PlaceHolderLibraryName, CharSet = CharSet.Ansi,
             EntryPoint = "nvmlSystemSetConfComputeGpusReadyState")]
         internal static extern NvmlReturn NvmlSystemSetConfComputeGpusReadyState(uint isAcceptingWork);
 
         #endregion
     }
     
-    public class NvGpu
+    public static class NvGpu
     {
-        public const uint NVML_INIT_FLAG_NO_GPUS = 1;
-        public const uint NVML_INIT_FLAG_NO_ATTACH = 2;
-
         public static int CudaDriverVersionMajor(int version)
         {
             return version / 1000;
@@ -427,11 +487,11 @@ namespace Nvidia.Nvml
             return Encoding.Default.GetString(name).Replace("\0", "");
         }
 
-        public static string nvmlSystemGetNVMLVersion(uint length)
+        public static string nvmlSystemGetNVMLVersion()
         {
             NvmlReturn res;
-            byte[] version = new byte[length];
-            res = Api.NvmlSystemGetNVMLVersion(version, length);
+            byte[] version = new byte[NvmlConstants.NVML_SYSTEM_NVML_VERSION_BUFFER_SIZE];
+            res = Api.NvmlSystemGetNVMLVersion(version, NvmlConstants.NVML_SYSTEM_NVML_VERSION_BUFFER_SIZE);
             if (NvmlReturn.NVML_SUCCESS != res)
             {
                 throw new SystemException(res.ToString());
@@ -440,11 +500,11 @@ namespace Nvidia.Nvml
             return Encoding.Default.GetString(version).Replace("\0", "");
         }
 
-        public static string nvmlSystemGetDriverVersion(uint length)
+        public static string nvmlSystemGetDriverVersion()
         {
             NvmlReturn res;
-            byte[] version = new byte[length];
-            res = Api.NvmlSystemGetDriverVersion(version, length);
+            byte[] version = new byte[NvmlConstants.NVML_SYSTEM_DRIVER_VERSION_BUFFER_SIZE];
+            res = Api.NvmlSystemGetDriverVersion(version, NvmlConstants.NVML_SYSTEM_DRIVER_VERSION_BUFFER_SIZE);
             if (NvmlReturn.NVML_SUCCESS != res)
             {
                 throw new SystemException(res.ToString());
@@ -519,10 +579,10 @@ namespace Nvidia.Nvml
             return data;
         }
 
-        public static string NvmlDeviceGetName(IntPtr device, uint length = 100)
+        public static string NvmlDeviceGetName(IntPtr device)
         {
-            byte[] buffer = new byte[length];
-            var res = Api.NvmlDeviceGetName(device, buffer, length);
+            byte[] buffer = new byte[NvmlConstants.NVML_DEVICE_NAME_BUFFER_SIZE];
+            var res = Api.NvmlDeviceGetName(device, buffer, NvmlConstants.NVML_DEVICE_NAME_BUFFER_SIZE);
             if (NvmlReturn.NVML_SUCCESS != res)
             {
                 throw new SystemException(res.ToString());
@@ -531,10 +591,11 @@ namespace Nvidia.Nvml
             return Encoding.Default.GetString(buffer).Replace("\0", "");
         }
 
-        public static string NvmlDeviceGetBoardPartNumber(IntPtr device, uint length)
+        public static string NvmlDeviceGetBoardPartNumber(IntPtr device)
         {
-            byte[] partNumber = new byte[length];
-            NvmlReturn res = Api.NvmlDeviceGetBoardPartNumber(device, partNumber, length);
+            byte[] partNumber = new byte[NvmlConstants.NVML_DEVICE_PART_NUMBER_BUFFER_SIZE];
+            NvmlReturn res = Api.NvmlDeviceGetBoardPartNumber(device, partNumber,
+                NvmlConstants.NVML_DEVICE_PART_NUMBER_BUFFER_SIZE);
             if (NvmlReturn.NVML_SUCCESS != res)
             {
                 throw new SystemException(res.ToString());
@@ -610,6 +671,19 @@ namespace Nvidia.Nvml
             NvmlReturn res;
             uint speed;
             res = Api.NvmlDeviceGetFanSpeed(device, out speed);
+            if (NvmlReturn.NVML_SUCCESS != res)
+            {
+                throw new SystemException(res.ToString());
+            }
+
+            return (uint)speed;
+        }
+
+        public static uint NvmlDeviceGetFanSpeed_v2(IntPtr device, uint fan)
+        {
+            NvmlReturn res;
+            uint speed;
+            res = Api.NvmlDeviceGetFanSpeed_v2(device, fan, out speed);
             if (NvmlReturn.NVML_SUCCESS != res)
             {
                 throw new SystemException(res.ToString());

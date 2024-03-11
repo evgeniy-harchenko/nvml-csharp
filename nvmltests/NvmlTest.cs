@@ -125,7 +125,7 @@ namespace NvlmTests
             {
                 NvGpu.NvmlInitV2();
                 var device = NvGpu.NvmlDeviceGetHandleByIndex(0);
-                var partnumber = NvGpu.NvmlDeviceGetBoardPartNumber(device, 20);
+                var partnumber = NvGpu.NvmlDeviceGetBoardPartNumber(device);
 
                 NvGpu.NvmlShutdown();
             }
@@ -211,7 +211,7 @@ namespace NvlmTests
             try
             {
                 NvGpu.NvmlInitV2();
-                string version = NvGpu.nvmlSystemGetNVMLVersion(100);
+                string version = NvGpu.nvmlSystemGetNVMLVersion();
                 if (version.Length == 0 || version == null)
                 {
                     Assert.Fail("Something fail to acquire nvml version.");
@@ -230,7 +230,7 @@ namespace NvlmTests
             try
             {
                 NvGpu.NvmlInitV2();
-                string driverVersion = NvGpu.nvmlSystemGetDriverVersion(10);
+                string driverVersion = NvGpu.nvmlSystemGetDriverVersion();
                 if (driverVersion.Length == 0 || driverVersion == null)
                 {
                     Assert.Fail("Something fail to acquire driver version.");
@@ -272,11 +272,11 @@ namespace NvlmTests
                 NvGpu.NvmlShutdown();
                 NvGpu.NvmlInitV2();
                 NvGpu.NvmlShutdown();
-                NvGpu.NvmlInitWithFlags(NvGpu.NVML_INIT_FLAG_NO_ATTACH);
+                NvGpu.NvmlInitWithFlags(NvmlConstants.NVML_INIT_FLAG_NO_ATTACH);
                 NvGpu.NvmlShutdown();
-                NvGpu.NvmlInitWithFlags(NvGpu.NVML_INIT_FLAG_NO_GPUS);
+                NvGpu.NvmlInitWithFlags(NvmlConstants.NVML_INIT_FLAG_NO_GPUS);
                 NvGpu.NvmlShutdown();
-                NvGpu.NvmlInitWithFlags(NvGpu.NVML_INIT_FLAG_NO_GPUS | NvGpu.NVML_INIT_FLAG_NO_ATTACH);
+                NvGpu.NvmlInitWithFlags(NvmlConstants.NVML_INIT_FLAG_NO_GPUS | NvmlConstants.NVML_INIT_FLAG_NO_ATTACH);
                 NvGpu.NvmlShutdown();
             }
             catch (Exception e)
