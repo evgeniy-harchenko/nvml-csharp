@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -121,7 +120,7 @@ namespace Nvidia.Nvml
 
         [DllImport(Constants.PlaceHolderLibraryName, CharSet = CharSet.Ansi,
             EntryPoint = "nvmlDeviceGetBAR1MemoryInfo")]
-        internal static extern NvmlReturn NvmlDeviceGetBAR1MemoryInfo(IntPtr device, NvmlBAR1Memory bar1Memory);
+        internal static extern NvmlReturn NvmlDeviceGetBAR1MemoryInfo(IntPtr device, out NvmlBAR1Memory bar1Memory);
 
         [DllImport(Constants.PlaceHolderLibraryName, CharSet = CharSet.Ansi, EntryPoint = "nvmlDeviceGetBoardId")]
         internal static extern NvmlReturn NvmlDeviceGetBoardId(IntPtr device, out uint boardId);
@@ -231,6 +230,9 @@ namespace Nvidia.Nvml
         [DllImport(Constants.PlaceHolderLibraryName, CharSet = CharSet.Ansi, EntryPoint = "nvmlDeviceGetFBCSessions")]
         internal static extern NvmlReturn NvmlDeviceGetFBCSessions(IntPtr device, out uint sessionCount,
             out NvmlFBCSessionInfo sessionInfo);
+
+        [DllImport(Constants.PlaceHolderLibraryName, CharSet = CharSet.Ansi, EntryPoint = "nvmlDeviceGetFBCStats")]
+        internal static extern NvmlReturn NvmlDeviceGetFBCStats(IntPtr device, out NvmlFBCStats fbcStats);
 
         [DllImport(Constants.PlaceHolderLibraryName, CharSet = CharSet.Ansi,
             EntryPoint = "nvmlDeviceGetFanControlPolicy_v2")]
@@ -702,9 +704,45 @@ namespace Nvidia.Nvml
             }
         }
 
+        public static NvmlFBCStats NvmlDeviceGetFBCStats(IntPtr device)
+        {
+            NvmlReturn res;
+            NvmlFBCStats stats;
+            res = Api.NvmlDeviceGetFBCStats(device, out stats);
+            if (NvmlReturn.NVML_SUCCESS != res)
+            {
+                throw new SystemException(res.ToString());
+            }
+
+            return stats;
+        }
+
+        public static NvmlBAR1Memory NvmlDeviceGetBAR1MemoryInfo(IntPtr device)
+        {
+            NvmlReturn res;
+            NvmlBAR1Memory memory;
+            res = Api.NvmlDeviceGetBAR1MemoryInfo(device, out memory);
+            if (NvmlReturn.NVML_SUCCESS != res)
+            {
+                throw new SystemException(res.ToString());
+            }
+
+            return memory;
+        }
+
         #endregion
 
         #region Device Commands
+
+        public static void NvmlDeviceClearEccErrorCounts(IntPtr device, NvmlEccCounterType counterType)
+        {
+            NvmlReturn res;
+            res = Api.NvmlDeviceClearEccErrorCounts(device, counterType);
+            if (NvmlReturn.NVML_SUCCESS != res)
+            {
+                throw new SystemException(res.ToString());
+            }
+        }
 
         public static IntPtr NvmlDeviceGetClkMonStatus(IntPtr device)
         {
@@ -719,6 +757,86 @@ namespace Nvidia.Nvml
             return status;
         }
 
+        public static void NvmlDeviceResetGpuLockedClocks(IntPtr device)
+        {
+            NvmlReturn res;
+            res = Api.NvmlDeviceResetGpuLockedClocks(device);
+            if (NvmlReturn.NVML_SUCCESS != res)
+            {
+                throw new SystemException(res.ToString());
+            }
+        }
+
+        public static void NvmlDeviceResetMemoryLockedClocks(IntPtr device)
+        {
+            NvmlReturn res;
+            res = Api.NvmlDeviceResetMemoryLockedClocks(device);
+            if (NvmlReturn.NVML_SUCCESS != res)
+            {
+                throw new SystemException(res.ToString());
+            }
+        }
+
+        public static void NvmlDeviceSetAPIRestriction(IntPtr device, NvmlRestrictedAPI apiType,
+            NvmlEnableState isRestricted)
+        {
+            NvmlReturn res;
+            res = Api.NvmlDeviceSetAPIRestriction(device, apiType, isRestricted);
+            if (NvmlReturn.NVML_SUCCESS != res)
+            {
+                throw new SystemException(res.ToString());
+            }
+        }
+
+        public static void NvmlDeviceSetApplicationsClocks(IntPtr device, uint memClockMHz, uint graphicsClockMHz)
+        {
+            NvmlReturn res;
+            res = Api.NvmlDeviceSetApplicationsClocks(device, memClockMHz, graphicsClockMHz);
+            if (NvmlReturn.NVML_SUCCESS != res)
+            {
+                throw new SystemException(res.ToString());
+            }
+        }
+
+        public static void NvmlDeviceSetComputeMode(IntPtr device, NvmlComputeMode mode)
+        {
+            var res = Api.NvmlDeviceSetComputeMode(device, mode);
+            if (NvmlReturn.NVML_SUCCESS != res)
+            {
+                throw new SystemException(res.ToString());
+            }
+        }
+
+        public static void NvmlDeviceSetConfComputeUnprotectedMemSize(IntPtr device, ulong sizeKiB)
+        {
+            NvmlReturn res;
+            res = Api.NvmlDeviceSetConfComputeUnprotectedMemSize(device, sizeKiB);
+            if (NvmlReturn.NVML_SUCCESS != res)
+            {
+                throw new SystemException(res.ToString());
+            }
+        }
+
+        public static void NvmlDeviceSetDriverModel(IntPtr device, NvmlDriverModel driverModel, uint flags)
+        {
+            NvmlReturn res;
+            res = Api.NvmlDeviceSetDriverModel(device, driverModel, flags);
+            if (NvmlReturn.NVML_SUCCESS != res)
+            {
+                throw new SystemException(res.ToString());
+            }
+        }
+
+        public static void NvmlDeviceSetEccMode(IntPtr device, NvmlEnableState ecc)
+        {
+            NvmlReturn res;
+            res = Api.NvmlDeviceSetEccMode(device, ecc);
+            if (NvmlReturn.NVML_SUCCESS != res)
+            {
+                throw new SystemException(res.ToString());
+            }
+        }
+
         public static void NvmlDeviceSetFanSpeed_v2(IntPtr device, uint fan, uint speed)
         {
             NvmlReturn res;
@@ -729,9 +847,80 @@ namespace Nvidia.Nvml
             }
         }
 
-        public static void NvmlDeviceSetComputeMode(IntPtr device, NvmlComputeMode mode)
+        public static void NvmlDeviceSetGpcClkVfOffset(IntPtr device, int offset)
         {
-            var res = Api.NvmlDeviceSetComputeMode(device, mode);
+            NvmlReturn res;
+            res = Api.NvmlDeviceSetGpcClkVfOffset(device, offset);
+            if (NvmlReturn.NVML_SUCCESS != res)
+            {
+                throw new SystemException(res.ToString());
+            }
+        }
+
+        public static void NvmlDeviceSetGpuLockedClocks(IntPtr device, uint minGpuClockMHz, uint maxGpuClockMHz)
+        {
+            NvmlReturn res;
+            res = Api.NvmlDeviceSetGpuLockedClocks(device, minGpuClockMHz, maxGpuClockMHz);
+            if (NvmlReturn.NVML_SUCCESS != res)
+            {
+                throw new SystemException(res.ToString());
+            }
+        }
+
+        public static void NvmlDeviceSetGpuOperationMode(IntPtr device, NvmlGpuOperationMode mode)
+        {
+            NvmlReturn res;
+            res = Api.NvmlDeviceSetGpuOperationMode(device, mode);
+            if (NvmlReturn.NVML_SUCCESS != res)
+            {
+                throw new SystemException(res.ToString());
+            }
+        }
+
+        public static void NvmlDeviceSetMemClkVfOffset(IntPtr device, int offset)
+        {
+            NvmlReturn res;
+            res = Api.NvmlDeviceSetMemClkVfOffset(device, offset);
+            if (NvmlReturn.NVML_SUCCESS != res)
+            {
+                throw new SystemException(res.ToString());
+            }
+        }
+
+        public static void NvmlDeviceSetMemoryLockedClocks(IntPtr device, uint minMemClockMHz, uint maxMemClockMHz)
+        {
+            NvmlReturn res;
+            res = Api.NvmlDeviceSetMemoryLockedClocks(device, minMemClockMHz, maxMemClockMHz);
+            if (NvmlReturn.NVML_SUCCESS != res)
+            {
+                throw new SystemException(res.ToString());
+            }
+        }
+
+        public static void NvmlDeviceSetPersistenceMode(IntPtr device, NvmlEnableState mode)
+        {
+            NvmlReturn res;
+            res = Api.NvmlDeviceSetPersistenceMode(device, mode);
+            if (NvmlReturn.NVML_SUCCESS != res)
+            {
+                throw new SystemException(res.ToString());
+            }
+        }
+
+        public static void NvmlDeviceSetPowerManagementLimit(IntPtr device, uint limit)
+        {
+            NvmlReturn res;
+            res = Api.NvmlDeviceSetPowerManagementLimit(device, limit);
+            if (NvmlReturn.NVML_SUCCESS != res)
+            {
+                throw new SystemException(res.ToString());
+            }
+        }
+
+        public static void NvmlSystemSetConfComputeGpusReadyState(uint isAcceptingWork)
+        {
+            NvmlReturn res;
+            res = Api.NvmlSystemSetConfComputeGpusReadyState(isAcceptingWork);
             if (NvmlReturn.NVML_SUCCESS != res)
             {
                 throw new SystemException(res.ToString());
