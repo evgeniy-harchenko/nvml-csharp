@@ -177,7 +177,7 @@ namespace Nvidia.Nvml
 
         [DllImport(Constants.PlaceHolderLibraryName, CharSet = CharSet.Ansi,
             EntryPoint = "nvmlDeviceGetDecoderUtilization")]
-        internal static extern NvmlReturn NvmlDeviceGetDecoderUtilization(IntPtr device, uint utilization,
+        internal static extern NvmlReturn NvmlDeviceGetDecoderUtilization(IntPtr device, out uint utilization,
             out uint samplingPeriodUs);
 
         [DllImport(Constants.PlaceHolderLibraryName, CharSet = CharSet.Ansi,
@@ -298,13 +298,37 @@ namespace Nvidia.Nvml
             uint length);
 
         [DllImport(Constants.PlaceHolderLibraryName, CharSet = CharSet.Ansi,
+            EntryPoint = "nvmlDeviceGetCurrPcieLinkGeneration")]
+        internal static extern NvmlReturn NvmlDeviceGetMaxPcieLinkGeneration(IntPtr device, out uint maxLinkGen);
+
+        [DllImport(Constants.PlaceHolderLibraryName, CharSet = CharSet.Ansi,
+            EntryPoint = "nvmlDeviceGetMaxPcieLinkWidth")]
+        internal static extern NvmlReturn NvmlDeviceGetMaxPcieLinkWidth(IntPtr device, out uint maxLinkWidth);
+
+        [DllImport(Constants.PlaceHolderLibraryName, CharSet = CharSet.Ansi,
             EntryPoint = "nvmlDeviceGetMemClkVfOffset")]
         internal static extern NvmlReturn NvmlDeviceGetMemClkVfOffset(IntPtr device, out int offset);
+
+        [DllImport(Constants.PlaceHolderLibraryName, CharSet = CharSet.Ansi,
+            EntryPoint = "nvmlDeviceGetMemoryBusWidth")]
+        internal static extern NvmlReturn NvmlDeviceGetMemoryBusWidth(IntPtr device, out uint busWidth);
+
+        [DllImport(Constants.PlaceHolderLibraryName, CharSet = CharSet.Ansi,
+            EntryPoint = "nvmlDeviceGetMemoryErrorCounter")]
+        internal static extern NvmlReturn NvmlDeviceGetMemoryErrorCounter(IntPtr device, NvmlMemoryErrorType errorType,
+            NvmlEccCounterType counterType, NvmlMemoryLocation locationType, out ulong count);
+
+        [DllImport(Constants.PlaceHolderLibraryName, CharSet = CharSet.Ansi,
+            EntryPoint = "nvmlDeviceGetMemoryInfo")]
+        internal static extern NvmlReturn NvmlDeviceGetMemoryInfo(IntPtr device, out NvmlMemory memory);
 
         [DllImport(Constants.PlaceHolderLibraryName, CharSet = CharSet.Ansi, EntryPoint = "nvmlDeviceGetName")]
         internal static extern NvmlReturn NvmlDeviceGetName(IntPtr device,
             [Out, MarshalAs(UnmanagedType.LPArray)]
             byte[] name, uint length);
+
+        [DllImport(Constants.PlaceHolderLibraryName, CharSet = CharSet.Ansi, EntryPoint = "nvmlDeviceGetNumGpuCores")]
+        internal static extern NvmlReturn NvmlDeviceGetNumGpuCores(IntPtr device, out uint numCores);
 
         [DllImport(Constants.PlaceHolderLibraryName, CharSet = CharSet.Ansi, EntryPoint = "nvmlDeviceGetPciInfo_v3")]
         internal static extern NvmlReturn NvmlDeviceGetPciInfo_v3(IntPtr device, out NvmlPciInfo pci);
@@ -326,6 +350,20 @@ namespace Nvidia.Nvml
             EntryPoint = "nvmlDeviceGetPowerManagementLimitConstraints")]
         internal static extern NvmlReturn NvmlDeviceGetPowerManagementLimitConstraints(IntPtr device, out uint minLimit,
             out uint maxLimit);
+
+        [DllImport(Constants.PlaceHolderLibraryName, CharSet = CharSet.Ansi, EntryPoint = "nvmlDeviceGetUUID")]
+        internal static extern NvmlReturn NvmlDeviceGetUUID(IntPtr device,
+            [Out, MarshalAs(UnmanagedType.LPArray)]
+            byte[] uuid, uint length);
+
+        [DllImport(Constants.PlaceHolderLibraryName, CharSet = CharSet.Ansi,
+            EntryPoint = "nvmlDeviceGetUtilizationRates")]
+        internal static extern NvmlReturn NvmlDeviceGetUtilizationRates(IntPtr device, out NvmlUtilization utilization);
+
+        [DllImport(Constants.PlaceHolderLibraryName, CharSet = CharSet.Ansi, EntryPoint = "nvmlDeviceGetVbiosVersion")]
+        internal static extern NvmlReturn NvmlDeviceGetVbiosVersion(IntPtr device,
+            [Out, MarshalAs(UnmanagedType.LPArray)]
+            byte[] version, uint length);
 
         [DllImport(Constants.PlaceHolderLibraryName, CharSet = CharSet.Ansi,
             EntryPoint = "nvmlDeviceSetDefaultFanSpeed_v2")]
@@ -422,7 +460,7 @@ namespace Nvidia.Nvml
 
         #endregion
     }
-    
+
     public static class NvGpu
     {
         public static int CudaDriverVersionMajor(int version)
@@ -502,7 +540,7 @@ namespace Nvidia.Nvml
             return Encoding.Default.GetString(version).Replace("\0", "");
         }
 
-        public static string nvmlSystemGetDriverVersion()
+        public static string NvmlSystemGetDriverVersion()
         {
             NvmlReturn res;
             byte[] version = new byte[NvmlConstants.NVML_SYSTEM_DRIVER_VERSION_BUFFER_SIZE];
@@ -568,6 +606,31 @@ namespace Nvidia.Nvml
 
             return count;
         }
+        
+        public static uint NvmlDeviceGetMemoryBusWidth(IntPtr device)
+        {
+            uint busWidth = 0;
+            NvmlReturn res = Api.NvmlDeviceGetMemoryBusWidth(device, out busWidth);
+            if (NvmlReturn.NVML_SUCCESS != res)
+            {
+                throw new SystemException(res.ToString());
+            }
+
+            return busWidth;
+        }
+        
+        public static NvmlMemory NvmlDeviceGetMemoryInfo(IntPtr device)
+        {
+            NvmlReturn res;
+            NvmlMemory memory;
+            res = Api.NvmlDeviceGetMemoryInfo(device, out memory);
+            if (NvmlReturn.NVML_SUCCESS != res)
+            {
+                throw new SystemException(res.ToString());
+            }
+
+            return memory;
+        }
 
         public static NvmlPciInfo NvmlDeviceGetPciInfoV3(IntPtr device)
         {
@@ -591,6 +654,19 @@ namespace Nvidia.Nvml
             }
 
             return Encoding.Default.GetString(buffer).Replace("\0", "");
+        }
+
+        public static uint NvmlDeviceGetNumGpuCores(IntPtr device)
+        {
+            NvmlReturn res;
+            uint numCores;
+            res = Api.NvmlDeviceGetNumGpuCores(device, out numCores);
+            if (NvmlReturn.NVML_SUCCESS != res)
+            {
+                throw new SystemException(res.ToString());
+            }
+
+            return (uint)numCores;
         }
 
         public static string NvmlDeviceGetBoardPartNumber(IntPtr device)
@@ -728,6 +804,124 @@ namespace Nvidia.Nvml
             }
 
             return memory;
+        }
+
+        public static string NvmlDeviceGetUUID(IntPtr device)
+        {
+            byte[] buffer = new byte[NvmlConstants.NVML_DEVICE_UUID_V2_BUFFER_SIZE];
+            var res = Api.NvmlDeviceGetUUID(device, buffer, NvmlConstants.NVML_DEVICE_UUID_V2_BUFFER_SIZE);
+            if (NvmlReturn.NVML_SUCCESS != res)
+            {
+                throw new SystemException(res.ToString());
+            }
+
+            return Encoding.Default.GetString(buffer).Replace("\0", "");
+        }
+
+        public static NvmlUtilization NvmlDeviceGetUtilizationRates(IntPtr device)
+        {
+            NvmlReturn res;
+            NvmlUtilization utilization;
+            res = Api.NvmlDeviceGetUtilizationRates(device, out utilization);
+            if (NvmlReturn.NVML_SUCCESS != res)
+            {
+                throw new SystemException(res.ToString());
+            }
+
+            return utilization;
+        }
+
+        public static string NvmlDeviceGetVbiosVersion(IntPtr device)
+        {
+            byte[] buffer = new byte[NvmlConstants.NVML_DEVICE_VBIOS_VERSION_BUFFER_SIZE];
+            var res = Api.NvmlDeviceGetVbiosVersion(device, buffer,
+                NvmlConstants.NVML_DEVICE_VBIOS_VERSION_BUFFER_SIZE);
+            if (NvmlReturn.NVML_SUCCESS != res)
+            {
+                throw new SystemException(res.ToString());
+            }
+
+            return Encoding.Default.GetString(buffer).Replace("\0", "");
+        }
+
+        public static (uint util, uint samplingPeriodUs) NvmlDeviceGetEncoderUtilization(IntPtr device)
+        {
+            NvmlReturn res;
+            uint util;
+            uint samplingPeriodUs;
+            res = Api.NvmlDeviceGetEncoderUtilization(device, out util, out samplingPeriodUs);
+            if (NvmlReturn.NVML_SUCCESS != res)
+            {
+                throw new SystemException(res.ToString());
+            }
+
+            return (util, samplingPeriodUs);
+        }
+
+        public static (uint util, uint samplingPeriodUs) NvmlDeviceGetDecoderUtilization(IntPtr device)
+        {
+            NvmlReturn res;
+            uint util;
+            uint samplingPeriodUs;
+            res = Api.NvmlDeviceGetDecoderUtilization(device, out util, out samplingPeriodUs);
+            if (NvmlReturn.NVML_SUCCESS != res)
+            {
+                throw new SystemException(res.ToString());
+            }
+
+            return (util, samplingPeriodUs);
+        }
+
+        public static uint NvmlDeviceGetCurrPcieLinkGeneration(IntPtr device)
+        {
+            NvmlReturn res;
+            uint currLinkGen;
+            res = Api.NvmlDeviceGetCurrPcieLinkGeneration(device, out currLinkGen);
+            if (NvmlReturn.NVML_SUCCESS != res)
+            {
+                throw new SystemException(res.ToString());
+            }
+
+            return (uint)currLinkGen;
+        }
+
+        public static uint NvmlDeviceGetCurrPcieLinkWidth(IntPtr device)
+        {
+            NvmlReturn res;
+            uint currLinkWidth;
+            res = Api.NvmlDeviceGetCurrPcieLinkWidth(device, out currLinkWidth);
+            if (NvmlReturn.NVML_SUCCESS != res)
+            {
+                throw new SystemException(res.ToString());
+            }
+
+            return (uint)currLinkWidth;
+        }
+
+        public static uint NvmlDeviceGetMaxPcieLinkGeneration(IntPtr device)
+        {
+            NvmlReturn res;
+            uint maxLinkGen;
+            res = Api.NvmlDeviceGetMaxPcieLinkGeneration(device, out maxLinkGen);
+            if (NvmlReturn.NVML_SUCCESS != res)
+            {
+                throw new SystemException(res.ToString());
+            }
+
+            return (uint)maxLinkGen;
+        }
+
+        public static uint NvmlDeviceGetMaxPcieLinkWidth(IntPtr device)
+        {
+            NvmlReturn res;
+            uint maxLinkWidth;
+            res = Api.NvmlDeviceGetMaxPcieLinkWidth(device, out maxLinkWidth);
+            if (NvmlReturn.NVML_SUCCESS != res)
+            {
+                throw new SystemException(res.ToString());
+            }
+
+            return (uint)maxLinkWidth;
         }
 
         #endregion
