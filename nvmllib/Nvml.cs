@@ -91,6 +91,11 @@ namespace Nvidia.Nvml
         internal static extern NvmlReturn NvmlDeviceGetTemperature(IntPtr device, NvmlTemperatureSensor sensorType,
             out uint temperature);
 
+        [DllImport(Constants.PlaceHolderLibraryName, EntryPoint = "nvmlDeviceGetTemperatureThreshold")]
+        internal static extern NvmlReturn NvmlDeviceGetTemperatureThreshold(IntPtr device,
+            NvmlTemperatureThresholds thresholdType,
+            out uint temperature);
+
         [DllImport(Constants.PlaceHolderLibraryName, CharSet = CharSet.Ansi,
             EntryPoint = "nvmlDeviceGetComputeRunningProcesses")]
         internal static extern NvmlReturn NvmlDeviceGetComputeRunningProcesses(IntPtr device, out uint infoCount,
@@ -145,6 +150,9 @@ namespace Nvidia.Nvml
 
         [DllImport(Constants.PlaceHolderLibraryName, CharSet = CharSet.Ansi, EntryPoint = "nvmlDeviceGetClockInfo")]
         internal static extern NvmlReturn NvmlDeviceGetClockInfo(IntPtr device, NvmlClockType type, out uint clock);
+
+        [DllImport(Constants.PlaceHolderLibraryName, CharSet = CharSet.Ansi, EntryPoint = "nvmlDeviceGetMaxClockInfo")]
+        internal static extern NvmlReturn NvmlDeviceGetMaxClockInfo(IntPtr device, NvmlClockType type, out uint clock);
 
         [DllImport(Constants.PlaceHolderLibraryName, CharSet = CharSet.Ansi, EntryPoint = "nvmlDeviceGetComputeMode")]
         internal static extern NvmlReturn NvmlDeviceGetComputeMode(IntPtr device, out NvmlComputeMode mode);
@@ -319,6 +327,11 @@ namespace Nvidia.Nvml
             NvmlEccCounterType counterType, NvmlMemoryLocation locationType, out ulong count);
 
         [DllImport(Constants.PlaceHolderLibraryName, CharSet = CharSet.Ansi,
+            EntryPoint = "nvmlDeviceGetMinMaxFanSpeed")]
+        internal static extern NvmlReturn NvmlDeviceGetMinMaxFanSpeed(IntPtr device, out uint minSpeed,
+            out uint maxSpeed);
+
+        [DllImport(Constants.PlaceHolderLibraryName, CharSet = CharSet.Ansi,
             EntryPoint = "nvmlDeviceGetMemoryInfo")]
         internal static extern NvmlReturn NvmlDeviceGetMemoryInfo(IntPtr device, out NvmlMemory memory);
 
@@ -326,6 +339,9 @@ namespace Nvidia.Nvml
         internal static extern NvmlReturn NvmlDeviceGetName(IntPtr device,
             [Out, MarshalAs(UnmanagedType.LPArray)]
             byte[] name, uint length);
+
+        [DllImport(Constants.PlaceHolderLibraryName, CharSet = CharSet.Ansi, EntryPoint = "nvmlDeviceGetNumFans")]
+        internal static extern NvmlReturn NvmlDeviceGetNumFans(IntPtr device, out uint numFans);
 
         [DllImport(Constants.PlaceHolderLibraryName, CharSet = CharSet.Ansi, EntryPoint = "nvmlDeviceGetNumGpuCores")]
         internal static extern NvmlReturn NvmlDeviceGetNumGpuCores(IntPtr device, out uint numCores);
@@ -606,7 +622,7 @@ namespace Nvidia.Nvml
 
             return count;
         }
-        
+
         public static uint NvmlDeviceGetMemoryBusWidth(IntPtr device)
         {
             uint busWidth = 0;
@@ -618,7 +634,7 @@ namespace Nvidia.Nvml
 
             return busWidth;
         }
-        
+
         public static NvmlMemory NvmlDeviceGetMemoryInfo(IntPtr device)
         {
             NvmlReturn res;
@@ -654,6 +670,19 @@ namespace Nvidia.Nvml
             }
 
             return Encoding.Default.GetString(buffer).Replace("\0", "");
+        }
+
+        public static uint NvmlDeviceGetNumFans(IntPtr device)
+        {
+            NvmlReturn res;
+            uint numFans;
+            res = Api.NvmlDeviceGetNumFans(device, out numFans);
+            if (NvmlReturn.NVML_SUCCESS != res)
+            {
+                throw new SystemException(res.ToString());
+            }
+
+            return (uint)numFans;
         }
 
         public static uint NvmlDeviceGetNumGpuCores(IntPtr device)
@@ -731,7 +760,21 @@ namespace Nvidia.Nvml
             return device;
         }
 
-        public static uint NvmlDeviceGetTemperature(IntPtr device, NvmlTemperatureSensor sensorType)
+        public static uint NvmlDeviceGetTemperature(IntPtr device)
+        {
+            NvmlReturn res;
+            uint temperature;
+            res = Api.NvmlDeviceGetTemperature(device, NvmlTemperatureSensor.NVML_TEMPERATURE_GPU, out temperature);
+            if (NvmlReturn.NVML_SUCCESS != res)
+            {
+                throw new SystemException(res.ToString());
+            }
+
+            return (uint)temperature;
+        }
+
+        public static uint NvmlDeviceGetTemperature(IntPtr device,
+            NvmlTemperatureSensor sensorType)
         {
             NvmlReturn res;
             uint temperature;
@@ -742,6 +785,46 @@ namespace Nvidia.Nvml
             }
 
             return (uint)temperature;
+        }
+
+        public static uint NvmlDeviceGetTemperatureThreshold(IntPtr device,
+            NvmlTemperatureThresholds thresholdType)
+        {
+            NvmlReturn res;
+            uint temperature;
+            res = Api.NvmlDeviceGetTemperatureThreshold(device, thresholdType, out temperature);
+            if (NvmlReturn.NVML_SUCCESS != res)
+            {
+                throw new SystemException(res.ToString());
+            }
+
+            return (uint)temperature;
+        }
+
+        public static uint NvmlDeviceGetClockInfo(IntPtr device, NvmlClockType type)
+        {
+            NvmlReturn res;
+            uint clock;
+            res = Api.NvmlDeviceGetClockInfo(device, type, out clock);
+            if (NvmlReturn.NVML_SUCCESS != res)
+            {
+                throw new SystemException(res.ToString());
+            }
+
+            return (uint)clock;
+        }
+
+        public static uint NvmlDeviceGetMaxClockInfo(IntPtr device, NvmlClockType type)
+        {
+            NvmlReturn res;
+            uint clock;
+            res = Api.NvmlDeviceGetMaxClockInfo(device, type, out clock);
+            if (NvmlReturn.NVML_SUCCESS != res)
+            {
+                throw new SystemException(res.ToString());
+            }
+
+            return (uint)clock;
         }
 
         public static uint NvmlDeviceGetFanSpeed(IntPtr device)
@@ -870,6 +953,20 @@ namespace Nvidia.Nvml
             }
 
             return (util, samplingPeriodUs);
+        }
+
+        public static (uint minSpeed, uint maxSpeed) NvmlDeviceGetMinMaxFanSpeed(IntPtr device)
+        {
+            NvmlReturn res;
+            uint minSpeed;
+            uint maxSpeed;
+            res = Api.NvmlDeviceGetMinMaxFanSpeed(device, out minSpeed, out maxSpeed);
+            if (NvmlReturn.NVML_SUCCESS != res)
+            {
+                throw new SystemException(res.ToString());
+            }
+
+            return (minSpeed, maxSpeed);
         }
 
         public static uint NvmlDeviceGetCurrPcieLinkGeneration(IntPtr device)
