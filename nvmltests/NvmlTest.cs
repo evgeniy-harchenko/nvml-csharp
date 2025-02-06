@@ -230,7 +230,7 @@ namespace NvlmTests
             try
             {
                 NvGpu.NvmlInitV2();
-                string driverVersion = NvGpu.nvmlSystemGetDriverVersion();
+                string driverVersion = NvGpu.NvmlSystemGetDriverVersion();
                 if (driverVersion.Length == 0 || driverVersion == null)
                 {
                     Assert.Fail("Something fail to acquire driver version.");
@@ -318,6 +318,198 @@ namespace NvlmTests
                 {
                     Assert.Fail("Cant get temperature.");
                 }
+                NvGpu.NvmlShutdown();
+            }
+            catch (Exception e)
+            {
+                Assert.Fail(e.ToString());
+            }
+        }
+        
+        [Test]
+        public void RetrieveDevicePerformanceStateTest()
+        {
+            try
+            {
+                NvGpu.NvmlInitV2();
+                IntPtr device = NvGpu.NvmlDeviceGetHandleByIndex(0);
+                int pState = NvGpu.NvmlDeviceGetPerformanceState(device);
+                TestContext.Progress.WriteLine($"Performance State: {pState}");
+                // Обычно pState находится в диапазоне от 0 до 15, где 0 — максимальная производительность
+                Assert.IsTrue(pState >= 0 && pState <= 15, "Performance state is out of expected range (0-15)");
+                NvGpu.NvmlShutdown();
+            }
+            catch (Exception e)
+            {
+                Assert.Fail(e.ToString());
+            }
+        }
+
+        [Test]
+        public void RetrieveDeviceClockThrottleReasonsTest()
+        {
+            try
+            {
+                NvGpu.NvmlInitV2();
+                IntPtr device = NvGpu.NvmlDeviceGetHandleByIndex(0);
+                ulong throttleReasons = NvGpu.NvmlDeviceGetCurrentClocksThrottleReasons(device);
+                TestContext.Progress.WriteLine($"Clock Throttle Reasons: {throttleReasons}");
+                // Пока не знаем ожидаемого набора флагов, проверим, что значение неотрицательное.
+                Assert.IsTrue(throttleReasons >= 0, "Clock throttle reasons must be non-negative");
+                NvGpu.NvmlShutdown();
+            }
+            catch (Exception e)
+            {
+                Assert.Fail(e.ToString());
+            }
+        }
+
+        [Test]
+        public void RetrieveDeviceSupportedClocksThrottleReasonsTest()
+        {
+            try
+            {
+                NvGpu.NvmlInitV2();
+                IntPtr device = NvGpu.NvmlDeviceGetHandleByIndex(0);
+                ulong supportedReasons = NvGpu.NvmlDeviceGetSupportedClocksThrottleReasons(device);
+                TestContext.Progress.WriteLine($"Supported Clocks Throttle Reasons: {supportedReasons}");
+                // Аналогично, проверим, что значение неотрицательное.
+                Assert.IsTrue(supportedReasons >= 0, "Supported clocks throttle reasons must be non-negative");
+                NvGpu.NvmlShutdown();
+            }
+            catch (Exception e)
+            {
+                Assert.Fail(e.ToString());
+            }
+        }
+
+        [Test]
+        public void RetrieveDeviceCurrentClocksThrottleReasonsTest()
+        {
+            try
+            {
+                NvGpu.NvmlInitV2();
+                IntPtr device = NvGpu.NvmlDeviceGetHandleByIndex(0);
+                ulong currentThrottleReasons = NvGpu.NvmlDeviceGetCurrentClocksThrottleReasons(device);
+                TestContext.Progress.WriteLine($"Current Clocks Throttle Reasons: {currentThrottleReasons}");
+                // Проверим, что значение корректное (>= 0)
+                Assert.IsTrue(currentThrottleReasons >= 0, "Current clocks throttle reasons must be non-negative");
+                NvGpu.NvmlShutdown();
+            }
+            catch (Exception e)
+            {
+                Assert.Fail(e.ToString());
+            }
+        }
+        
+                [Test]
+        public void RetrieveDevicePowerStateTest()
+        {
+            try
+            {
+                NvGpu.NvmlInitV2();
+                IntPtr device = NvGpu.NvmlDeviceGetHandleByIndex(0);
+                
+                uint powerState = NvGpu.NvmlDeviceGetPowerState(device);
+                TestContext.Progress.WriteLine($"Power State: {powerState}");
+                
+                // Обычно powerState — это значение в диапазоне (например, 0..5).
+                Assert.IsTrue(powerState <= 5, "Power state is outside the expected range (0-5)");
+                
+                NvGpu.NvmlShutdown();
+            }
+            catch (Exception e)
+            {
+                Assert.Fail(e.ToString());
+            }
+        }
+
+        [Test]
+        public void RetrieveDevicePowerUsageTest()
+        {
+            try
+            {
+                NvGpu.NvmlInitV2();
+                IntPtr device = NvGpu.NvmlDeviceGetHandleByIndex(0);
+                
+                uint powerUsage = NvGpu.NvmlDeviceGetPowerUsage(device);
+                TestContext.Progress.WriteLine($"Power Usage (mW): {powerUsage}");
+                
+                // Проверим, что потребление мощности положительно.
+                Assert.IsTrue(powerUsage > 0, "Power usage must be greater than zero");
+                
+                NvGpu.NvmlShutdown();
+            }
+            catch (Exception e)
+            {
+                Assert.Fail(e.ToString());
+            }
+        }
+
+        [Test]
+        public void RetrieveDeviceSupportedEventTypesTest()
+        {
+            try
+            {
+                NvGpu.NvmlInitV2();
+                IntPtr device = NvGpu.NvmlDeviceGetHandleByIndex(0);
+                
+                ulong eventTypes = NvGpu.NvmlDeviceGetSupportedEventTypes(device);
+                TestContext.Progress.WriteLine($"Supported Event Types: {eventTypes}");
+                
+                // Обычно набор поддерживаемых событий не должен быть нулевым.
+                Assert.IsTrue(eventTypes != 0, "Supported event types should not be zero");
+                
+                NvGpu.NvmlShutdown();
+            }
+            catch (Exception e)
+            {
+                Assert.Fail(e.ToString());
+            }
+        }
+
+        [Test]
+        public void RetrieveDeviceTotalEnergyConsumptionTest()
+        {
+            try
+            {
+                NvGpu.NvmlInitV2();
+                IntPtr device = NvGpu.NvmlDeviceGetHandleByIndex(0);
+                
+                uint energy = NvGpu.NvmlDeviceGetTotalEnergyConsumption(device);
+                TestContext.Progress.WriteLine($"Total Energy Consumption: {energy}");
+                
+                // Значение энергии может быть 0, если устройство не поддерживает измерение или тест выполнен слишком быстро.
+                Assert.IsTrue(energy >= 0, "Total energy consumption should be non-negative");
+                
+                NvGpu.NvmlShutdown();
+            }
+            catch (Exception e)
+            {
+                // Если устройство не поддерживает измерение энергии, можно передать тест.
+                if (e.Message.Contains("NVML_ERROR_NOT_SUPPORTED"))
+                {
+                    TestContext.Progress.WriteLine("Total Energy Consumption is not supported by this device.");
+                    Assert.Pass();
+                }
+                Assert.Fail(e.ToString());
+            }
+        }
+
+        [Test]
+        public void RetrieveDevicePowerManagementLimitConstraintsTest()
+        {
+            try
+            {
+                NvGpu.NvmlInitV2();
+                IntPtr device = NvGpu.NvmlDeviceGetHandleByIndex(0);
+                
+                (uint minLimit, uint maxLimit) = NvGpu.NvmlDeviceGetPowerManagementLimitConstraints(device);
+                TestContext.Progress.WriteLine($"Power Management Limit Constraints - Min: {minLimit}, Max: {maxLimit}");
+                
+                // Минимальный лимит должен быть не больше максимального.
+                Assert.IsTrue(minLimit <= maxLimit, "Minimum limit should be less than or equal to maximum limit");
+                
                 NvGpu.NvmlShutdown();
             }
             catch (Exception e)

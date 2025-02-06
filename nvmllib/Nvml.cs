@@ -361,6 +361,26 @@ namespace Nvidia.Nvml
         [DllImport(Constants.PlaceHolderLibraryName, CharSet = CharSet.Ansi,
             EntryPoint = "nvmlDeviceGetPowerManagementLimit")]
         internal static extern NvmlReturn NvmlDeviceGetPowerManagementLimit(IntPtr device, out uint limit);
+        
+        // Получает текущее состояние мощности устройства.
+        [DllImport(Constants.PlaceHolderLibraryName, CharSet = CharSet.Ansi,
+            EntryPoint = "nvmlDeviceGetPowerState")]
+        internal static extern NvmlReturn NvmlDeviceGetPowerState(IntPtr device, out uint powerState);
+
+        // Получает текущее потребление мощности устройства (в милливаттах).
+        [DllImport(Constants.PlaceHolderLibraryName, CharSet = CharSet.Ansi,
+            EntryPoint = "nvmlDeviceGetPowerUsage")]
+        internal static extern NvmlReturn NvmlDeviceGetPowerUsage(IntPtr device, out uint powerUsage);
+
+        // Получает поддерживаемые типы событий устройства.
+        [DllImport(Constants.PlaceHolderLibraryName, CharSet = CharSet.Ansi,
+            EntryPoint = "nvmlDeviceGetSupportedEventTypes")]
+        internal static extern NvmlReturn NvmlDeviceGetSupportedEventTypes(IntPtr device, out ulong eventTypes);
+
+        // Получает суммарное потребление энергии устройством (например, в миллиджоулях).
+        [DllImport(Constants.PlaceHolderLibraryName, CharSet = CharSet.Ansi,
+            EntryPoint = "nvmlDeviceGetTotalEnergyConsumption")]
+        internal static extern NvmlReturn NvmlDeviceGetTotalEnergyConsumption(IntPtr device, out uint energy);
 
         [DllImport(Constants.PlaceHolderLibraryName, CharSet = CharSet.Ansi,
             EntryPoint = "nvmlDeviceGetPowerManagementLimitConstraints")]
@@ -474,6 +494,16 @@ namespace Nvidia.Nvml
             EntryPoint = "nvmlSystemSetConfComputeGpusReadyState")]
         internal static extern NvmlReturn NvmlSystemSetConfComputeGpusReadyState(uint isAcceptingWork);
 
+        // Возвращает текущий PState устройства (0 — максимальная производительность, 12 — минимальная)
+        [DllImport(Constants.PlaceHolderLibraryName, CharSet = CharSet.Ansi,
+            EntryPoint = "nvmlDeviceGetPerformanceState")]
+        internal static extern NvmlReturn NvmlDeviceGetPerformanceState(IntPtr device, out int performanceState);
+        
+        // Возвращает поддерживаемые причины ограничения тактовых частот устройства
+        [DllImport(Constants.PlaceHolderLibraryName, CharSet = CharSet.Ansi,
+            EntryPoint = "nvmlDeviceGetSupportedClocksThrottleReasons")]
+        internal static extern NvmlReturn NvmlDeviceGetSupportedClocksThrottleReasons(IntPtr device, out ulong supportedThrottleReasons);
+        
         #endregion
     }
 
@@ -1020,7 +1050,104 @@ namespace Nvidia.Nvml
 
             return (uint)maxLinkWidth;
         }
+        
+        /// <summary>
+        /// Возвращает текущий PState устройства (например, 0 означает максимальную производительность).
+        /// </summary>
+        public static int NvmlDeviceGetPerformanceState(IntPtr device)
+        {
+            int state;
+            var res = Api.NvmlDeviceGetPerformanceState(device, out state);
+            if (NvmlReturn.NVML_SUCCESS != res)
+            {
+                throw new SystemException(res.ToString());
+            }
+            return state;
+        }
 
+        /// <summary>
+        /// Возвращает причины ограничения тактовых частот устройства.
+        /// </summary>
+        public static ulong NvmlDeviceGetCurrentClocksThrottleReasons(IntPtr device)
+        {
+            ulong reasons;
+            var res = Api.NvmlDeviceGetCurrentClocksThrottleReasons(device, out reasons);
+            if (NvmlReturn.NVML_SUCCESS != res)
+            {
+                throw new SystemException(res.ToString());
+            }
+            return reasons;
+        }
+
+        /// <summary>
+        /// Возвращает поддерживаемые причины ограничения тактовых частот устройства.
+        /// </summary>
+        public static ulong NvmlDeviceGetSupportedClocksThrottleReasons(IntPtr device)
+        {
+            ulong reasons;
+            var res = Api.NvmlDeviceGetSupportedClocksThrottleReasons(device, out reasons);
+            if (NvmlReturn.NVML_SUCCESS != res)
+            {
+                throw new SystemException(res.ToString());
+            }
+            return reasons;
+        }
+        
+        public static uint NvmlDeviceGetPowerState(IntPtr device)
+        {
+            uint state;
+            var res = Api.NvmlDeviceGetPowerState(device, out state);
+            if (NvmlReturn.NVML_SUCCESS != res)
+            {
+                throw new SystemException(res.ToString());
+            }
+            return state;
+        }
+
+        public static uint NvmlDeviceGetPowerUsage(IntPtr device)
+        {
+            uint usage;
+            var res = Api.NvmlDeviceGetPowerUsage(device, out usage);
+            if (NvmlReturn.NVML_SUCCESS != res)
+            {
+                throw new SystemException(res.ToString());
+            }
+            return usage;
+        }
+
+        public static ulong NvmlDeviceGetSupportedEventTypes(IntPtr device)
+        {
+            ulong eventTypes;
+            var res = Api.NvmlDeviceGetSupportedEventTypes(device, out eventTypes);
+            if (NvmlReturn.NVML_SUCCESS != res)
+            {
+                throw new SystemException(res.ToString());
+            }
+            return eventTypes;
+        }
+
+        public static uint NvmlDeviceGetTotalEnergyConsumption(IntPtr device)
+        {
+            uint energy;
+            var res = Api.NvmlDeviceGetTotalEnergyConsumption(device, out energy);
+            if (NvmlReturn.NVML_SUCCESS != res)
+            {
+                throw new SystemException(res.ToString());
+            }
+            return energy;
+        }
+        
+        public static (uint minLimit, uint maxLimit) NvmlDeviceGetPowerManagementLimitConstraints(IntPtr device)
+        {
+            uint minLimit, maxLimit;
+            var res = Api.NvmlDeviceGetPowerManagementLimitConstraints(device, out minLimit, out maxLimit);
+            if (NvmlReturn.NVML_SUCCESS != res)
+            {
+                throw new SystemException(res.ToString());
+            }
+            return (minLimit, maxLimit);
+        }
+        
         #endregion
 
         #region Device Commands
